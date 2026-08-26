@@ -52,6 +52,10 @@
         "tab": "API Reference",
         "groups": [
           {
+            "group": "Public API",
+            "openapi": "https://app.goclai.com/api/v1/openapi.json"
+          },
+          {
             "group": "MCP Tools",
             "pages": [
               "api/overview",
