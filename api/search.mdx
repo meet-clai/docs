@@ -1,0 +1,103 @@
+---
+title: "search: Full-Text Search Across Documentation Sources"
+sidebarTitle: "search"
+description: "The search MCP tool performs full-text search across all configured documentation sources and returns ranked, relevant page excerpts."
+---
+
+`search` is the primary tool AI clients use to find relevant documentation — it accepts a query string and returns ranked excerpts from matching pages. When you ask your AI assistant a question that relates to your docs, the first thing it does is call `search` with your question (or a refined version of it) to ground its answer in real content. CLAI searches across all configured sources — including Fumadocs sites, plain Markdown repos, and `llms.txt`-discovered pages — and merges the results into a single ranked list.
+
+## Tool signature
+
+<ParamField query="query" type="string" required>
+  The search query string. AI clients typically pass the user's question or a distilled version of it. Supports natural language and keyword-style queries.
+</ParamField>
+
+<ParamField query="maxResults" type="number">
+  The maximum number of results to return. When provided, this overrides the `defaultMaxResults` value set in `clai.config.json`. Has no effect if it exceeds the configured `hardMaxResults` cap.
+</ParamField>
+
+<ParamField query="source" type="string">
+  Limit the search to a specific named source as defined in `clai.config.json`. When omitted, CLAI searches across all configured sources and merges the results by relevance score.
+</ParamField>
+
+## Request example
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "search",
+    "arguments": {
+      "query": "how to authenticate API requests",
+      "maxResults": 5
+    }
+  }
+}
+```
+
+## Response
+
+CLAI returns matched excerpts inside the standard MCP content envelope. The `text` field contains a JSON-encoded object with the following structure:
+
+<ResponseField name="results" type="array" required>
+  An array of result objects ordered by descending relevance score. Returns an empty array when no matches are found.
+
+  <Expandable title="Result object fields">
+    <ResponseField name="title" type="string" required>
+      The title of the matching documentation page.
+    </ResponseField>
+
+    <ResponseField name="url" type="string" required>
+      The full URL or file path of the matching page.
+    </ResponseField>
+
+    <ResponseField name="excerpt" type="string" required>
+      A short snippet of the page content that matched the query. Excerpts are trimmed to the most relevant passage and typically range from one to four sentences.
+    </ResponseField>
+
+    <ResponseField name="score" type="number" required>
+      A relevance score between `0` and `1`. Scores closer to `1` indicate a stronger match. Results are always returned in descending score order.
+    </ResponseField>
+
+    <ResponseField name="source" type="string" required>
+      The name of the configured source this result came from, as defined in `clai.config.json`.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"results\": [{\"title\": \"Authentication\", \"url\": \"https://docs.example.com/auth\", \"excerpt\": \"Pass your API key in the Authorization header...\", \"score\": 0.95, \"source\": \"main-docs\"}]}"
+    }
+  ]
+}
+```
+
+## Search behavior
+
+CLAI combines keyword matching with semantic matching to rank results. Keyword matching finds pages that contain the exact terms in your query; semantic matching finds pages that are topically related even when the wording differs. The final `score` reflects the combined signal from both approaches.
+
+When searching across multiple sources, CLAI merges results from all sources into a single ranked list before returning them. The `source` field on each result lets the AI client (and you) trace where each excerpt came from.
+
+You can tune search defaults in `clai.config.json` under `tools.search`:
+
+```json
+{
+  "tools": {
+    "search": {
+      "enabled": true,
+      "defaultMaxResults": 10,
+      "hardMaxResults": 25
+    }
+  }
+}
+```
+
+<Note>
+  If `search` returns an empty `results` array, the AI client falls back to its built-in training knowledge to answer your question — which means the response won't reflect your actual docs. If you're seeing this unexpectedly, verify that your sources are reachable and have been indexed successfully by running `clai index --check`.
+</Note>

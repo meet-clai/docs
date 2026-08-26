@@ -1,0 +1,78 @@
+---
+title: "CLAI MCP API Reference: Tool Calling and Error Codes"
+sidebarTitle: "Overview"
+description: "Learn how CLAI's three MCP tools work, how AI clients call them over JSON-RPC 2.0, and how to handle errors in your Fumadocs or Markdown docs setup."
+---
+
+CLAI implements the Model Context Protocol and exposes three tools that AI clients call automatically when answering questions about your docs. You never need to invoke these tools manually — your AI assistant discovers and calls them on its own as part of every conversation that touches your documentation. CLAI works with any Markdown-based documentation site, including Fumadocs projects, out of the box.
+
+## How MCP tool calling works
+
+Under the hood, CLAI speaks JSON-RPC 2.0. When an AI client like Claude Desktop or Cursor needs to look something up, it sends a `tools/call` request to CLAI over the active transport (STDIO or HTTP). CLAI processes the request, queries the appropriate documentation sources, and returns a structured result the AI uses to construct its response.
+
+A minimal `tools/call` request looks like this:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "search",
+    "arguments": { "query": "authentication" }
+  }
+}
+```
+
+CLAI receives this message, runs the search against your configured sources, and sends back a JSON-RPC response containing the results. The AI client then incorporates those results into its reply.
+
+## Available tools
+
+<CardGroup cols={3}>
+  <Card title="search" icon="magnifying-glass" href="/api/search">
+    Full-text search across all configured documentation sources. Returns ranked excerpts from matching pages. The most frequently called tool in typical usage.
+  </Card>
+  <Card title="list_pages" icon="list" href="/api/list-pages">
+    Returns a complete index of all available documentation pages, including titles, URLs, and optional descriptions, from one or all configured sources.
+  </Card>
+  <Card title="get_page" icon="file-lines" href="/api/get-page">
+    Fetches the full markdown content of a specific documentation page by URL or path, up to the configured content length limit.
+  </Card>
+</CardGroup>
+
+## Tool discovery
+
+Before calling any tool, MCP clients send a `tools/list` request to discover what's available. CLAI responds with its full tool manifest — including each tool's name, description, and input schema — so the AI client knows exactly how to call each one.
+
+You don't need to configure this step. CLAI handles `tools/list` automatically whenever a client connects, regardless of transport mode.
+
+## Error handling
+
+CLAI returns standard JSON-RPC 2.0 error codes alongside two CLAI-specific error codes:
+
+| Code | Name | Meaning |
+|---|---|---|
+| `-32700` | Parse error | The request payload could not be parsed as valid JSON |
+| `-32600` | Invalid request | The JSON-RPC structure is malformed or missing required fields |
+| `-32601` | Method not found | The requested method does not exist |
+| `-32602` | Invalid params | The tool arguments fail validation (e.g. a required field is missing) |
+| `CLAI_SOURCE_ERROR` | Source unreachable | A configured documentation source could not be fetched or indexed |
+| `CLAI_TOOL_DISABLED` | Tool disabled | The called tool has been disabled in `clai.config.json` |
+
+All errors are returned in the standard JSON-RPC error envelope:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "error": {
+    "code": -32602,
+    "message": "Invalid params",
+    "data": { "field": "query", "issue": "required field missing" }
+  }
+}
+```
+
+<Note>
+  Tools are called by the AI client automatically — you rarely invoke them directly. If you're debugging unexpected behavior, check your `clai.config.json` sources and confirm the relevant tool is enabled.
+</Note>

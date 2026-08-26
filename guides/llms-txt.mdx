@@ -1,0 +1,174 @@
+---
+title: "Generate llms.txt for CLAI with Fumadocs and Mintlify"
+sidebarTitle: "llms.txt"
+description: "Set up llms.txt for CLAI using Fumadocs, Mintlify, or a custom static file so AI clients can discover and index your docs automatically."
+---
+
+`llms.txt` is an emerging standard — analogous to `robots.txt` for search crawlers — that lists your documentation pages in a format specifically optimized for AI consumption. Instead of asking an AI to scrape and parse a full website, you give it a clean, structured index of exactly the pages that matter. CLAI uses your `llms.txt` file to discover and index your entire docs site in a single request, then fetches individual pages on demand as AI clients query them.
+
+## What is llms.txt?
+
+An `llms.txt` file lives at the root of your documentation site — typically at `https://your-site.com/llms.txt`. It contains a list of page URLs and titles in a lightweight, human-readable format that AI tools can parse without any special processing. Each entry points to a page in your docs, giving CLAI a complete map of your content before any searches or lookups happen.
+
+A companion file, `llms-full.txt`, takes a different approach: it concatenates the full Markdown content of every page in your site into a single file. This gives an AI the entire documentation corpus in one download, at the cost of a much larger payload.
+
+<Info>
+  The `llms.txt` standard is actively developed and documented at [llmstxt.org](https://llmstxt.org). That site covers the full file format specification, including how to structure sections, add descriptions, and indicate which pages are most important for AI tools to prioritize.
+</Info>
+
+## Fumadocs
+
+Fumadocs has first-class support for `llms.txt` through the `llms` helper from `fumadocs-core/source`. You add a Next.js Route Handler to your app and Fumadocs generates the index automatically from your content source at request time — no manual page enumeration required.
+
+### Setting up llms.txt
+
+Create the following route handler in your Fumadocs Next.js project:
+
+```typescript app/llms.txt/route.ts
+import { source } from '@/lib/source';
+import { llms } from 'fumadocs-core/source';
+
+// cached forever — regenerates only on redeploy
+export const revalidate = false;
+
+export function GET() {
+  return new Response(llms(source).index());
+}
+```
+
+The `llms(source).index()` call reads your Fumadocs page tree and generates a properly formatted `llms.txt` file containing every page's URL and title. Once deployed, your `llms.txt` is live at `https://your-docs-site.com/llms.txt`.
+
+Point CLAI at it using an `llms-txt` source in your config:
+
+```json clai.config.json
+{
+  "sources": [
+    {
+      "type": "llms-txt",
+      "url": "https://your-docs-site.com/llms.txt",
+      "name": "Fumadocs Site"
+    }
+  ]
+}
+```
+
+CLAI fetches the route handler's output at startup, discovers every page in your Fumadocs site, and makes them all available to connected AI clients through the `search`, `list_pages`, and `get_page` tools.
+
+### Setting up llms-full.txt (optional)
+
+Fumadocs also supports generating `llms-full.txt` — a single file containing the full Markdown content of every page. This requires a `getLLMText` helper that converts each page's processed MDX into plain text.
+
+First, enable `includeProcessedMarkdown` in your content source config:
+
+```typescript source.config.ts
+import { defineDocs } from 'fumadocs-mdx/config';
+
+export const docs = defineDocs({
+  docs: {
+    postprocess: {
+      includeProcessedMarkdown: true,
+    },
+  },
+});
+```
+
+Then create a `getLLMText` helper:
+
+```typescript lib/get-llm-text.ts
+import { source } from '@/lib/source';
+
+export async function getLLMText(page: (typeof source)['$inferPage']) {
+  const processed = await page.data.getText('processed');
+
+  return `# ${page.data.title} (${page.url})\n\n${processed}`;
+}
+```
+
+Finally, add the `llms-full.txt` route handler:
+
+```typescript app/llms-full.txt/route.ts
+import { source } from '@/lib/source';
+import { getLLMText } from '@/lib/get-llm-text';
+
+// cached forever — regenerates only on redeploy
+export const revalidate = false;
+
+export async function GET() {
+  const scan = source.getPages().map(getLLMText);
+  const scanned = await Promise.all(scan);
+
+  return new Response(scanned.join('\n\n'));
+}
+```
+
+<Tip>
+  Start with `llms.txt` rather than `llms-full.txt`. CLAI fetches individual pages on demand, so the lightweight index is more token-efficient for day-to-day use. Only add `llms-full.txt` if you need the entire corpus available in a single download.
+</Tip>
+
+## Mintlify
+
+Mintlify exposes an `llms.txt` file automatically for every hosted documentation site — you don't need to configure anything on the Mintlify side. The file is available at your docs URL the moment your site is deployed.
+
+Your CLAI source URL is simply your Mintlify docs domain with `/llms.txt` appended:
+
+```json clai.config.json
+{
+  "sources": [
+    {
+      "type": "llms-txt",
+      "url": "https://your-mintlify-site.com/llms.txt"
+    }
+  ]
+}
+```
+
+If you use a custom domain for your Mintlify docs, use that domain in the URL. The `llms.txt` file is served from the same domain as your docs, regardless of whether you're on a Mintlify subdomain or a custom domain.
+
+## Custom llms.txt
+
+If your documentation site doesn't have built-in `llms.txt` support, you can create one manually and host it anywhere — a public GitHub repository, an S3 bucket, or a simple static file served alongside your docs. The format is plain text with Markdown-style section headers:
+
+```text llms.txt
+# My Documentation
+
+## Getting Started
+https://docs.example.com/introduction
+https://docs.example.com/quickstart
+
+## API Reference
+https://docs.example.com/api/auth
+https://docs.example.com/api/users
+```
+
+Section headers (`##`) are optional but help CLAI and AI clients understand the structure of your documentation. List one URL per line under each section. CLAI fetches each listed URL and indexes the page content it finds there.
+
+Once you've created and hosted the file, add it to your CLAI config the same way you would for any other `llms-txt` source:
+
+```json clai.config.json
+{
+  "sources": [
+    {
+      "type": "llms-txt",
+      "url": "https://raw.githubusercontent.com/your-org/docs/main/llms.txt",
+      "name": "Custom Docs Index"
+    }
+  ]
+}
+```
+
+## llms.txt vs llms-full.txt
+
+The two files in the `llms.txt` standard serve different purposes, and choosing the right one affects how CLAI uses your documentation.
+
+| | `llms.txt` | `llms-full.txt` |
+|---|---|---|
+| **Contents** | Page index — URLs and titles | Full content of every page concatenated |
+| **File size** | Small (kilobytes) | Large (can be megabytes) |
+| **Token usage** | Low — CLAI fetches pages on demand | High — entire corpus loaded at once |
+| **Best for** | Most use cases | Offline or air-gapped environments |
+
+Start with `llms.txt`. It gives CLAI everything it needs to discover your content, and individual pages are only fetched when an AI client actually requests them. Switch to `llms-full.txt` only if your environment can't make per-page HTTP requests or if you need the entire corpus available instantly without any follow-up fetches.
+
+<Tip>
+  Before pointing CLAI at your `llms.txt` URL, open it in a browser and verify it returns plain text with a list of URLs. If you see an HTML page, a 404, or a login redirect, CLAI will fail to index your docs. A quick manual check saves you from hunting down a misconfigured source later.
+</Tip>

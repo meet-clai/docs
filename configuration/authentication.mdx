@@ -1,0 +1,175 @@
+---
+title: "Authenticate CLAI with Protected Documentation Sources"
+sidebarTitle: "Authentication"
+description: "Configure CLAI to authenticate with password-protected or API-key-gated documentation sources using Bearer tokens, API keys, or basic auth."
+---
+
+If your documentation site requires authentication, CLAI supports passing credentials automatically when fetching content from protected sources. You can configure a single set of credentials that applies globally to all sources, or assign different credentials to individual sources when you need fine-grained control.
+
+<Note>
+  This page covers how to authenticate **CLAI with your documentation sources** — that is, how CLAI proves its identity when fetching pages from password-protected or API-key-gated sites. It does not cover securing the CLAI server itself or restricting which AI clients can connect to it.
+</Note>
+
+## Auth types
+
+Choose the authentication scheme that matches what your documentation host expects.
+
+<Tabs>
+  <Tab title="Bearer Token">
+    Use Bearer token authentication when your docs host issues API tokens and expects them in an `Authorization` header. This is the most common scheme for developer documentation platforms.
+
+    ```json
+    {
+      "auth": {
+        "type": "bearer",
+        "token": "${DOCS_API_TOKEN}"
+      }
+    }
+    ```
+
+    CLAI sends the following header with every request to your documentation sources:
+
+    ```
+    Authorization: Bearer <token>
+    ```
+
+    <ParamField body="auth.type" type="string" required>
+      Must be `"bearer"`.
+    </ParamField>
+
+    <ParamField body="auth.token" type="string" required>
+      The Bearer token value. Use an environment variable reference like `${DOCS_API_TOKEN}` rather than a hardcoded string.
+    </ParamField>
+  </Tab>
+
+  <Tab title="API Key">
+    Use API key authentication when your docs host expects a secret key in a custom request header. You specify both the header name and the key value.
+
+    ```json
+    {
+      "auth": {
+        "type": "apikey",
+        "header": "X-API-Key",
+        "key": "${API_KEY}"
+      }
+    }
+    ```
+
+    CLAI sends the header you specify with every request:
+
+    ```
+    X-API-Key: <key>
+    ```
+
+    <ParamField body="auth.type" type="string" required>
+      Must be `"apikey"`.
+    </ParamField>
+
+    <ParamField body="auth.header" type="string" required>
+      The name of the HTTP header to send the key in. Common values are `X-API-Key`, `X-Auth-Token`, and `Api-Key` — check your documentation host's requirements.
+    </ParamField>
+
+    <ParamField body="auth.key" type="string" required>
+      The API key value. Use an environment variable reference like `${API_KEY}` rather than a hardcoded string.
+    </ParamField>
+  </Tab>
+
+  <Tab title="Basic Auth">
+    Use Basic Auth when your documentation is protected by HTTP Basic Authentication — for example, a staging site behind an `.htpasswd` file or an internal wiki.
+
+    ```json
+    {
+      "auth": {
+        "type": "basic",
+        "username": "${USERNAME}",
+        "password": "${PASSWORD}"
+      }
+    }
+    ```
+
+    CLAI base64-encodes your credentials and sends them as a standard `Authorization` header:
+
+    ```
+    Authorization: Basic <base64(username:password)>
+    ```
+
+    <ParamField body="auth.type" type="string" required>
+      Must be `"basic"`.
+    </ParamField>
+
+    <ParamField body="auth.username" type="string" required>
+      The Basic Auth username. Use an environment variable reference like `${USERNAME}`.
+    </ParamField>
+
+    <ParamField body="auth.password" type="string" required>
+      The Basic Auth password. Use an environment variable reference like `${PASSWORD}`.
+    </ParamField>
+  </Tab>
+</Tabs>
+
+## Using environment variables
+
+Store all credentials in environment variables — never write raw tokens, passwords, or keys directly into `clai.config.json`. Any value in the config file that matches the `${VARIABLE_NAME}` pattern is automatically resolved from the environment at startup.
+
+Create a `.env` file next to your `clai.config.json` to manage local credentials:
+
+```bash
+# .env — never commit this file to version control
+DOCS_API_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+PRIVATE_DOCS_TOKEN=sk-live-abc123xyz...
+API_KEY=api_prod_9f8e7d6c5b4a...
+USERNAME=docs-reader
+PASSWORD=s3cur3p@ssword
+```
+
+Load it by running CLAI with your preferred environment loader, for example:
+
+```bash
+# Node.js projects with dotenv
+node --env-file=.env clai start
+
+# Or using dotenv-cli
+dotenv clai start
+```
+
+<Warning>
+  Never commit credentials to version control. Add `.env` to your `.gitignore` immediately — before you write any secrets into it. If you accidentally commit a token, rotate it right away and scrub it from your Git history.
+</Warning>
+
+## Per-source authentication
+
+When you fetch documentation from multiple sources that each require different credentials, set `auth` directly on the individual source rather than at the top level. Per-source auth takes precedence over any global `auth` configuration.
+
+<Tip>
+  **Fumadocs users:** If your Fumadocs site is deployed behind authentication (for example, a private preview or an intranet deployment), add `auth` directly to the source entry that points to your Fumadocs `llms.txt` URL. This lets CLAI fetch your Fumadocs pages with the right credentials without affecting any other public sources you may have configured.
+</Tip>
+
+```json
+{
+  "sources": [
+    {
+      "type": "url",
+      "url": "https://private-docs.example.com/llms.txt",
+      "auth": {
+        "type": "bearer",
+        "token": "${PRIVATE_DOCS_TOKEN}"
+      }
+    },
+    {
+      "type": "url",
+      "url": "https://internal-wiki.example.com/llms.txt",
+      "auth": {
+        "type": "basic",
+        "username": "${WIKI_USERNAME}",
+        "password": "${WIKI_PASSWORD}"
+      }
+    },
+    {
+      "type": "local",
+      "path": "./docs"
+    }
+  ]
+}
+```
+
+In this example, CLAI uses a Bearer token for the first source, Basic Auth for the second, and no authentication for the local source. The global `auth` field is omitted entirely because every protected source has its own credentials.

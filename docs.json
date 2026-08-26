@@ -1,0 +1,80 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "name": "CLAI",
+  "theme": "luma",
+  "colors": {
+    "primary": "#ef7025",
+    "light": "#eec9bc",
+    "dark": "#4fa1ab"
+  },
+  "favicon": "/favicon.svg",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "how-it-works"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration/overview",
+              "configuration/tools",
+              "configuration/authentication"
+            ]
+          },
+          {
+            "group": "Integrations",
+            "pages": [
+              "integrations/claude-desktop",
+              "integrations/cursor",
+              "integrations/vscode",
+              "integrations/other-clients"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/adding-docs-sources",
+              "guides/customizing-tools",
+              "guides/llms-txt"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "MCP Tools",
+            "pages": [
+              "api/overview",
+              "api/list-pages",
+              "api/search",
+              "api/get-page"
+            ]
+          },
+          {
+            "group": "Transport",
+            "pages": [
+              "api/stdio",
+              "api/http"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/mintlify-community/docs-clai-270af231"
+    }
+  }
+}

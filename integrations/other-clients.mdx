@@ -1,0 +1,107 @@
+---
+title: "Connect CLAI to Any MCP-Compatible AI Client or Tool"
+sidebarTitle: "Other Clients"
+description: "Use CLAI with Windsurf, Zed, Replit, Continue, and any other MCP-compatible AI client over STDIO or HTTP transport using standard MCP configuration."
+---
+
+CLAI implements the standard Model Context Protocol, so it works with any MCP-compatible client — not just Claude Desktop, Cursor, and VS Code. If a tool speaks MCP, CLAI speaks back. This page covers the two transport modes CLAI supports and how to wire them up in any client, including guidance for teams using Fumadocs as their documentation platform.
+
+## STDIO vs HTTP transport
+
+CLAI supports two transport modes. Choose the one that fits your deployment:
+
+<CardGroup cols={2}>
+  <Card title="STDIO" icon="terminal">
+    **Best for local clients.** CLAI runs as a subprocess of the host application (Claude Desktop, Cursor, VS Code, Zed). Communication happens over standard input/output — no network port, no firewall rules. Zero setup beyond pointing the client at the `clai` binary.
+  </Card>
+  <Card title="Streamable HTTP" icon="globe">
+    **Best for remote and team deployments.** CLAI starts as a persistent HTTP server and exposes a URL that any client can connect to. Ideal when you want a single shared CLAI instance for a whole team, or when the client runs in the cloud.
+  </Card>
+</CardGroup>
+
+## Connecting via STDIO
+
+Most MCP clients use a consistent JSON configuration pattern for STDIO servers. Wherever your client expects an MCP server definition, provide:
+
+```json
+{
+  "command": "clai",
+  "args": ["start", "--stdio"]
+}
+```
+
+Some clients wrap this in a named object or add extra fields (like `cwd` or `env`). Consult your client's MCP documentation for the exact schema, then drop the `command` and `args` values above into the appropriate fields.
+
+<Note>
+  CLAI follows the official MCP specification, so if a client supports MCP, CLAI should work with it. The `command` and `args` pattern above is the canonical MCP STDIO configuration used across virtually all MCP-compatible clients.
+</Note>
+
+## Connecting via HTTP
+
+Start CLAI as an HTTP server on any available port:
+
+```bash
+clai start --http --port 3000
+```
+
+CLAI will listen at `http://localhost:3000` and expose its MCP endpoint at:
+
+```text
+http://localhost:3000/mcp
+```
+
+Configure your client to connect to that URL. Most clients that support HTTP transport accept a `"url"` or `"endpoint"` field in their MCP config:
+
+```json
+{
+  "type": "http",
+  "url": "http://localhost:3000/mcp"
+}
+```
+
+For team deployments, replace `localhost` with the hostname or IP of the machine running CLAI. Make sure port 3000 (or whichever port you choose) is reachable from the clients that need to connect.
+
+## Supported clients
+
+<CardGroup cols={2}>
+  <Card title="Windsurf" icon="wind">
+    Add CLAI using Windsurf's MCP settings panel. Use the stdio transport and set the command to `clai start --stdio`.
+  </Card>
+  <Card title="Zed" icon="bolt">
+    Zed supports MCP via its extension system. Install the MCP extension, then configure CLAI as a stdio server in your Zed settings JSON.
+  </Card>
+  <Card title="Replit" icon="code">
+    Replit's agent tools support MCP-compatible servers. Connect CLAI over HTTP by deploying it as a persistent service and pointing Replit at the `/mcp` endpoint.
+  </Card>
+  <Card title="Continue" icon="arrow-right">
+    The Continue VS Code extension supports MCP tool servers. Add CLAI to Continue's `config.json` under the `mcpServers` key using the stdio transport.
+  </Card>
+  <Card title="Custom MCP clients" icon="wrench">
+    Building your own MCP client? CLAI responds to all standard MCP messages over both STDIO and HTTP. Use the official MCP SDK to connect.
+  </Card>
+  <Card title="Any JSON-RPC 2.0 client" icon="brackets-curly">
+    CLAI's HTTP transport accepts raw JSON-RPC 2.0 requests. Any HTTP client can call CLAI tools directly by posting to the `/mcp` endpoint.
+  </Card>
+</CardGroup>
+
+## Using CLAI with Fumadocs
+
+If your documentation is built with Fumadocs, CLAI supports it natively. Point your `clai.config.json` at your Fumadocs source directory and CLAI will automatically discover and index your pages through the standard file-based layout Fumadocs uses. No additional plugins or adapters are required — CLAI reads your Markdown and MDX files directly and makes them available to every connected MCP client.
+
+<Tip>
+  If your Fumadocs site also has an `llms.txt` file at its root, add its URL to your `clai.config.json` under `sources`. CLAI will use it as a sitemap to enumerate your pages automatically, which is the fastest way to get a large Fumadocs site fully indexed.
+</Tip>
+
+## MCP tool discovery
+
+MCP clients can call `server/discover` (or the equivalent capabilities handshake in the MCP spec) to get CLAI's full tool manifest. CLAI responds with the complete list of tools it exposes, their names, descriptions, and input schemas:
+
+- **`search`** — full-text search across all configured documentation sources
+- **`list_pages`** — enumerate every page available in a source
+- **`get_page`** — retrieve the full content of a specific page by URL or path
+
+Clients use this manifest to understand what CLAI can do and to present tool options to the AI model. You don't need to configure this manually — discovery happens automatically during the MCP handshake when the client first connects.
+
+<Note>
+  CLAI strictly follows the [official MCP specification](https://spec.modelcontextprotocol.io). If your client is spec-compliant, CLAI will work with it. If you run into an incompatibility, it's likely a deviation in the client's implementation — check the client's MCP version and compare it against the spec version CLAI targets.
+</Note>

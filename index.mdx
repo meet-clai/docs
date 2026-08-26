@@ -1,0 +1,69 @@
+---
+title: "CLAI: AI-Powered Documentation via Model Context Protocol"
+sidebarTitle: "Home"
+description: "CLAI is an MCP server that connects AI assistants to your documentation, enabling instant, accurate answers grounded in your actual docs."
+---
+
+CLAI exposes your documentation to AI assistants through the [Model Context Protocol (MCP)](https://modelcontextprotocol.io) — an open standard that lets tools like Claude, Cursor, and VS Code Copilot search, retrieve, and reason over your docs in real time. Whether you're using Fumadocs, Mintlify, or any Markdown-based docs site, CLAI makes your documentation a first-class data source for AI.
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Connect your docs to an AI assistant in under 5 minutes
+  </Card>
+  <Card title="How It Works" icon="circle-info" href="/how-it-works">
+    Understand the MCP architecture behind CLAI
+  </Card>
+  <Card title="Integrations" icon="plug" href="/integrations/claude-desktop">
+    Connect Claude Desktop, Cursor, VS Code, and more
+  </Card>
+  <Card title="API Reference" icon="code" href="/api/overview">
+    Explore the MCP tools your AI clients can call
+  </Card>
+</CardGroup>
+
+## Get Up and Running
+
+<Steps>
+  <Step title="Install CLAI">
+    Add the CLAI MCP server to your project using your preferred package manager.
+
+    ```bash
+    npm install -g clai
+    ```
+  </Step>
+  <Step title="Point it at your docs">
+    Create a `clai.config.json` file and add your documentation source — a URL, a local path, or an `llms.txt` endpoint.
+
+    ```json clai.config.json
+    {
+      "sources": [
+        { "type": "url", "url": "https://your-docs-site.com/llms.txt" }
+      ]
+    }
+    ```
+  </Step>
+  <Step title="Connect your AI client">
+    Register CLAI as an MCP server in Claude Desktop, Cursor, or VS Code. Your AI assistant can now search and retrieve your docs automatically.
+  </Step>
+  <Step title="Ask questions">
+    Open your AI assistant and ask questions about your docs. CLAI's `search`, `list_pages`, and `get_page` tools will fetch the right content automatically.
+  </Step>
+</Steps>
+
+## Why CLAI?
+
+<CardGroup cols={3}>
+  <Card title="Always Current" icon="arrows-rotate">
+    AI answers are grounded in your live documentation — not stale training data.
+  </Card>
+  <Card title="Any MCP Client" icon="network-wired">
+    Works with Claude, Cursor, VS Code Copilot, Windsurf, and any MCP-compatible tool.
+  </Card>
+  <Card title="Any Docs Platform" icon="book-open">
+    Supports Fumadocs, Mintlify, plain Markdown, and any site with an `llms.txt` file.
+  </Card>
+</CardGroup>
+
+<Tip>
+  Already using Fumadocs? CLAI integrates directly with your existing `llms.txt` route — no migration required. See the [Fumadocs guide](/guides/llms-txt) to get started.
+</Tip>

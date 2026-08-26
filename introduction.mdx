@@ -1,0 +1,54 @@
+---
+title: "CLAI — MCP Server for AI-Accessible Documentation"
+sidebarTitle: "Introduction"
+description: "CLAI is an MCP server that makes your documentation searchable and accessible to AI assistants like Claude, Cursor, and VS Code Copilot."
+---
+
+CLAI is an MCP server that bridges your documentation and the AI assistants your team already uses. Instead of relying on outdated training data, tools like Claude Desktop, Cursor, and VS Code Copilot can query your actual docs in real time — giving users accurate, grounded answers drawn directly from the content you maintain.
+
+## What is CLAI?
+
+AI assistants are powerful, but they hallucinate when asked about your product. They were trained on a snapshot of the internet, not your latest API reference or your most recent release notes. CLAI solves this by exposing your documentation as a set of tools over the **Model Context Protocol (MCP)** — an open standard by Anthropic for connecting AI applications to live, external data.
+
+When a user asks an AI assistant a question about your product, CLAI intercepts that query, searches your docs, and returns the most relevant content. The AI then uses that content to craft a precise, up-to-date answer. No fine-tuning. No stale responses.
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="AI-Ready Docs" icon="robot">
+    Serve your documentation directly to AI assistants so they always answer from your latest content, not outdated training data.
+  </Card>
+  <Card title="Any MCP Client" icon="plug">
+    Works with any MCP-compatible host including Claude Desktop, Cursor, and VS Code Copilot — connect once, use everywhere.
+  </Card>
+  <Card title="Built-in Tools" icon="wrench">
+    CLAI exposes three MCP tools out of the box: `search` for semantic queries, `list_pages` to enumerate content, and `get_page` to fetch full pages.
+  </Card>
+  <Card title="Fumadocs & Mintlify" icon="book-open">
+    Native support for Fumadocs and Mintlify doc sites. CLAI understands their structure and indexes your content automatically.
+  </Card>
+  <Card title="llms.txt Support" icon="file-lines">
+    Point CLAI at any `llms.txt` file — the emerging standard for LLM-friendly doc listings — and it handles the rest.
+  </Card>
+  <Card title="STDIO & HTTP Transports" icon="tower-broadcast">
+    Run CLAI as a local process over STDIO for personal setups, or deploy it as a Streamable HTTP server for team-wide access.
+  </Card>
+</CardGroup>
+
+## Prerequisites
+
+Before you get started, make sure you have the following:
+
+- **Node.js 18 or later** installed on your machine
+- **An existing docs site or a directory of Markdown files** — CLAI needs something to read
+- **An MCP-compatible AI client** such as Claude Desktop, Cursor, or VS Code with the Copilot extension
+
+<Tip>
+  If your docs are built with **Fumadocs**, you're already set up for the fastest possible integration. Fumadocs sites expose an `llms.txt` route by default, which CLAI can read directly — no extra configuration needed.
+</Tip>
+
+## Ready to Connect Your Docs?
+
+<Card title="Quickstart — Up and Running in 5 Minutes" icon="rocket" href="/quickstart">
+  Install CLAI, point it at your docs, and connect it to your AI assistant in under five minutes.
+</Card>

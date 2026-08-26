@@ -1,0 +1,92 @@
+---
+title: "get_page Tool: Fetch Full Documentation Page Content"
+sidebarTitle: "get_page"
+description: "The get_page MCP tool retrieves the complete markdown content of a documentation page by URL or path, up to the configured content length limit."
+---
+
+`get_page` fetches the full content of a specific documentation page, letting AI clients read complete context when a search excerpt isn't enough. When `search` returns a relevant hit but the AI needs the full details — a complete API reference, a multi-step guide, a config schema — it calls `get_page` to retrieve the entire page. This works with any page URL returned by `search` or `list_pages`, whether the source is a Fumadocs site, a plain Markdown repo, or a remote documentation host.
+
+## Tool signature
+
+<ParamField query="url" type="string" required>
+  The full URL or file path of the documentation page to fetch. This should match a URL returned by `search` or `list_pages`. Relative paths are resolved against the base URL of the matching source.
+</ParamField>
+
+<ParamField query="format" type="string" default="markdown">
+  The output format for the page content. Accepted values are `"markdown"` (returns content with original formatting preserved) and `"text"` (returns plain text with all markdown syntax stripped). Defaults to `"markdown"`.
+</ParamField>
+
+## Request example
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "get_page",
+    "arguments": {
+      "url": "https://docs.example.com/authentication"
+    }
+  }
+}
+```
+
+## Response
+
+CLAI returns the page content inside the standard MCP content envelope. The `text` field contains a JSON-encoded object with the following structure:
+
+<ResponseField name="content" type="string" required>
+  The full content of the page in the requested format. If the page exceeds `maxContentLength`, the content is cut at the nearest paragraph boundary and a truncation notice is appended.
+</ResponseField>
+
+<ResponseField name="title" type="string" required>
+  The page title, extracted from the first `# heading` in the content or from the page's front matter `title` field.
+</ResponseField>
+
+<ResponseField name="url" type="string" required>
+  The canonical URL of the fetched page. May differ from the requested URL if a redirect was followed.
+</ResponseField>
+
+<ResponseField name="truncated" type="boolean" required>
+  Set to `true` when the page content was cut short because it exceeded the configured `maxContentLength` limit. When `true`, the content field ends with a truncation notice indicating more content exists.
+</ResponseField>
+
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"title\": \"Authentication\", \"url\": \"https://docs.example.com/authentication\", \"content\": \"# Authentication\\n\\nPass your API key...\", \"truncated\": false}"
+    }
+  ]
+}
+```
+
+## Content length limits
+
+By default, CLAI caps fetched page content at a configurable `maxContentLength` (measured in characters). This prevents a single large page from consuming the AI's entire context window. You can adjust the limit in `clai.config.json` under `tools.get_page`:
+
+```json
+{
+  "tools": {
+    "get_page": {
+      "enabled": true,
+      "maxContentLength": 20000,
+      "format": "markdown"
+    }
+  }
+}
+```
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `enabled` | boolean | `true` | Set to `false` to disable the tool entirely. |
+| `maxContentLength` | number | `20000` | Maximum character count for returned content. Content exceeding this limit is truncated and a notice is appended. |
+| `format` | string | `"markdown"` | Default output format. Can be overridden per-call via the `format` argument. |
+
+When `truncated` is `true` in the response, the AI client knows the page has more content. In practice, the AI will surface this in its answer — for example, noting that the full guide continues beyond what it retrieved.
+
+<Warning>
+  Be cautious when setting `maxContentLength` to very high values. Very large pages can exhaust the AI client's context window, causing it to lose earlier parts of the conversation or fail to respond altogether. A limit between `15000` and `30000` characters works well for most documentation pages.
+</Warning>

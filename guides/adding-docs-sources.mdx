@@ -1,0 +1,125 @@
+---
+title: "Configure Documentation Sources in clai.config.json"
+sidebarTitle: "Doc Sources"
+description: "Add URL endpoints, local Markdown directories, and llms.txt feeds to CLAI so AI clients can search, list, and retrieve your documentation."
+---
+
+CLAI's `sources` array in `clai.config.json` is the single place where you define every piece of documentation your AI clients can access. You can mix and match URL sources, local file paths, and `llms.txt` endpoints in one config — CLAI merges them all into a unified, searchable index at startup.
+
+## Source types
+
+<CardGroup cols={3}>
+  <Card title="URL Source" icon="link">
+    Point CLAI at any publicly accessible documentation page or sitemap endpoint. Ideal for hosted docs you don't own locally.
+  </Card>
+  <Card title="Local Path" icon="folder-open">
+    Reference a directory of Markdown or MDX files on disk. Great for docs that live alongside your source code, including Fumadocs projects.
+  </Card>
+  <Card title="llms.txt" icon="file-lines">
+    Use the `llms.txt` standard to hand CLAI a curated, AI-optimized index of your entire docs site in one request.
+  </Card>
+</CardGroup>
+
+## URL source
+
+A URL source points CLAI at a single documentation page or a structured endpoint that lists multiple pages. CLAI fetches the content at that URL and makes it available to connected AI clients through the `search`, `list_pages`, and `get_page` tools.
+
+```json clai.config.json
+{ "type": "url", "url": "https://docs.example.com/api-reference" }
+```
+
+<Tip>
+  For single-page documentation sites, pass the root URL directly. For multi-page sites, point CLAI at an `llms.txt` or sitemap URL instead — this gives it structured access to every page rather than just the landing page.
+</Tip>
+
+## Local path source
+
+A local path source tells CLAI to read documentation files directly from your filesystem. This is the fastest option for docs that live in the same repository as your project — including Fumadocs MDX projects where your content lives in a `content/docs` directory — and it works entirely offline with no network requests required.
+
+```json clai.config.json
+{ "type": "local", "path": "./content/docs" }
+```
+
+CLAI recursively walks the specified directory and indexes every `.md` and `.mdx` file it finds, including files nested inside subdirectories. Non-Markdown files are ignored automatically.
+
+<Note>
+  Relative paths like `./content/docs` are resolved from the directory that contains your `clai.config.json` file, not from your current working directory when you run the CLI. Keep your config at the root of your project to avoid unexpected path resolution.
+</Note>
+
+## llms.txt source
+
+An `llms.txt` source uses the `llms.txt` standard — a plain text file that lists all your documentation pages in a format designed for AI consumption. When CLAI encounters this source type, it fetches the `llms.txt` file first, then follows each listed URL to build a complete index of your docs. Fumadocs sites can generate this file automatically using a Next.js Route Handler — see the [llms.txt guide](/guides/llms-txt) for the full setup.
+
+```json clai.config.json
+{ "type": "llms-txt", "url": "https://docs.example.com/llms.txt" }
+```
+
+CLAI fetches the `llms.txt` file and indexes every page listed inside it, giving your AI clients full visibility into your documentation structure without you having to enumerate individual URLs.
+
+**`llms.txt` vs `llms-full.txt`:** The standard defines two companion files. `llms.txt` is a lightweight page index — it lists URLs and titles so CLAI can discover pages and fetch them on demand. `llms-full.txt` concatenates the full content of every page into a single file. CLAI works best with `llms.txt` because it can fetch individual pages lazily, keeping token usage low. Use `llms-full.txt` only if your site doesn't expose per-page URLs.
+
+## Multiple sources
+
+You can combine any number of sources in a single `clai.config.json`. CLAI merges them into one index, so your AI clients search across all sources simultaneously.
+
+```json clai.config.json
+{
+  "sources": [
+    {
+      "type": "url",
+      "url": "https://docs.example.com/api-reference",
+      "name": "API Reference"
+    },
+    {
+      "type": "local",
+      "path": "./content/docs",
+      "name": "Local Guides"
+    },
+    {
+      "type": "llms-txt",
+      "url": "https://docs.example.com/llms.txt",
+      "name": "Public Docs"
+    }
+  ]
+}
+```
+
+Give each source a unique `name` when combining multiple sources — it helps you identify which source a result came from when debugging or reviewing AI responses.
+
+## Source options reference
+
+<ParamField body="type" type="string" required>
+  The source type. One of `"url"`, `"local"`, or `"llms-txt"`. Determines how CLAI fetches and parses the documentation content.
+</ParamField>
+
+<ParamField body="url" type="string">
+  The URL to fetch documentation from. Required when `type` is `"url"` or `"llms-txt"`. Must be a fully qualified URL including the scheme (e.g., `https://`).
+</ParamField>
+
+<ParamField body="path" type="string">
+  The local filesystem path to a directory of Markdown files. Required when `type` is `"local"`. Supports relative paths resolved from the config file's location.
+</ParamField>
+
+<ParamField body="name" type="string">
+  An optional display name for this source. Appears in CLAI logs and can help you distinguish sources when multiple are configured.
+</ParamField>
+
+<ParamField body="auth" type="object">
+  Optional authentication configuration for protected documentation endpoints. Supports bearer token and basic auth schemes. See the authentication guide for details.
+</ParamField>
+
+<ParamField body="enabled" type="boolean" default="true">
+  Set to `false` to temporarily disable a source without removing it from your config. CLAI skips disabled sources at startup.
+</ParamField>
+
+## Refresh behavior
+
+By default, CLAI reads all configured sources once at startup and holds the indexed content in memory for the duration of the process. Restarting CLAI is the simplest way to pick up changes to remote URLs or rebuilt documentation sites.
+
+For local file sources, you can pass the `--watch` flag when starting CLAI to enable automatic reload whenever a `.md` or `.mdx` file changes on disk:
+
+```bash
+clai start --watch
+```
+
+With `--watch` active, CLAI detects file system changes and re-indexes the affected local sources in the background without requiring a full restart. Remote URL and `llms.txt` sources are not affected by `--watch` — they are only re-fetched on restart.

@@ -1,0 +1,91 @@
+{
+  "projectType": "saas",
+  "projectName": "CLAI",
+  "projectDescription": "An MCP (Model Context Protocol) server that exposes your documentation to AI assistants, enabling AI tools to search, retrieve, and reason over your docs in real time.",
+  "theme": "luma",
+  "primaryColor": "#ef7025",
+  "lightColor": "#eec9bc",
+  "darkColor": "#4fa1ab",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "how-it-works"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration/overview",
+              "configuration/tools",
+              "configuration/authentication"
+            ]
+          },
+          {
+            "group": "Integrations",
+            "pages": [
+              "integrations/claude-desktop",
+              "integrations/cursor",
+              "integrations/vscode",
+              "integrations/other-clients"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/adding-docs-sources",
+              "guides/customizing-tools",
+              "guides/llms-txt"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "MCP Tools",
+            "pages": [
+              "api/overview",
+              "api/list-pages",
+              "api/search",
+              "api/get-page"
+            ]
+          },
+          {
+            "group": "Transport",
+            "pages": [
+              "api/stdio",
+              "api/http"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Expose documentation to AI assistants via the Model Context Protocol",
+    "Built-in tools: search, list_pages, and get_page",
+    "Support for llms.txt and llms-full.txt sources",
+    "Compatible with Claude Desktop, Cursor, VS Code Copilot, and any MCP client",
+    "STDIO and Streamable HTTP transport modes",
+    "Authentication support for protected documentation sources",
+    "Easy configuration via a single config file",
+    "Works with Fumadocs, Mintlify, and any Markdown-based docs site"
+  ],
+  "publicApiSurface": [
+    "search — full-text search across documentation sources",
+    "list_pages — enumerate available documentation pages",
+    "get_page — fetch the full content of a specific page",
+    "STDIO transport — run as a local MCP server process",
+    "HTTP transport — run as a remote MCP server endpoint",
+    "llms.txt integration — auto-discover pages from llms.txt sitemap",
+    "config.json — configure doc sources, tools, and authentication"
+  ]
+}

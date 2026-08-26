@@ -1,0 +1,123 @@
+---
+title: "Configure CLAI Tools: search, list_pages, get_page"
+sidebarTitle: "Tools"
+description: "Enable, disable, and tune the three MCP tools CLAI exposes to AI clients: search, list_pages, and get_page, with full config examples."
+---
+
+CLAI exposes three MCP tools to AI clients — `search`, `list_pages`, and `get_page` — and you can enable or disable each one independently, as well as tune the parameters that control how much data they return. All three tools are enabled with sensible defaults when you omit the `tools` block from your `clai.config.json`.
+
+## Tools overview
+
+<CardGroup cols={3}>
+  <Card title="search" icon="magnifying-glass">
+    Runs a full-text query across all configured documentation sources and returns the most relevant page excerpts.
+  </Card>
+  <Card title="list_pages" icon="list">
+    Returns a complete list of all available documentation pages with their titles and URLs.
+  </Card>
+  <Card title="get_page" icon="file-lines">
+    Fetches the full Markdown content of a single documentation page by its URL or path.
+  </Card>
+</CardGroup>
+
+## search
+
+The `search` tool lets AI clients run full-text queries across every documentation source you have configured. When an AI assistant needs to answer a question, it calls `search` first to locate the most relevant pages before diving into their content. Results include page titles, URLs, and short content excerpts ranked by relevance.
+
+### Configuration options
+
+<ParamField body="tools.search.enabled" type="boolean" default="true">
+  Set to `false` to remove the `search` tool from the list of tools advertised to AI clients. When disabled, clients cannot discover or query your documentation by keyword.
+</ParamField>
+
+<ParamField body="tools.search.maxResults" type="number" default="10">
+  The maximum number of results returned per search query. Increase this value when your docs are large and clients may need broader coverage; reduce it to keep responses concise. Capped at `50`.
+</ParamField>
+
+<ParamField body="tools.search.includeMetadata" type="boolean" default="false">
+  When `true`, each search result includes additional metadata fields such as `lastModified`, `tags`, and `section` where available from the source. Useful for building richer AI responses but increases payload size.
+</ParamField>
+
+### Example
+
+```json
+{
+  "tools": {
+    "search": {
+      "enabled": true,
+      "maxResults": 20,
+      "includeMetadata": true
+    }
+  }
+}
+```
+
+## list_pages
+
+The `list_pages` tool returns a flat list of every documentation page available across all configured sources, along with each page's title and URL. AI clients use this tool to understand the full scope of your documentation — for example, to enumerate all guides before selecting one to read in detail.
+
+<Tip>
+  **Fumadocs users:** When your source points to a Fumadocs `llms.txt` endpoint, `list_pages` reflects every page that Fumadocs exports in its sitemap. If you add or remove pages in your Fumadocs project, restart CLAI so it re-indexes the updated `llms.txt` and the page listing stays current.
+</Tip>
+
+### Configuration options
+
+<ParamField body="tools.list_pages.enabled" type="boolean" default="true">
+  Set to `false` to prevent AI clients from requesting a full page listing. Consider disabling this for very large documentation sites where a full enumeration would produce an unwieldy response.
+</ParamField>
+
+<ParamField body="tools.list_pages.includeDescriptions" type="boolean" default="false">
+  When `true`, each entry in the page listing includes the page's meta description or a short auto-generated summary. This helps AI clients make more informed decisions about which pages to read, at the cost of a larger response payload.
+</ParamField>
+
+### Example
+
+```json
+{
+  "tools": {
+    "list_pages": {
+      "enabled": true,
+      "includeDescriptions": true
+    }
+  }
+}
+```
+
+## get_page
+
+The `get_page` tool fetches the complete Markdown content of a specific documentation page by URL or path. After using `search` or `list_pages` to identify a relevant page, AI clients call `get_page` to read its full content and synthesize an accurate answer.
+
+### Configuration options
+
+<ParamField body="tools.get_page.enabled" type="boolean" default="true">
+  Set to `false` to block AI clients from retrieving full page content. This is useful when your documentation sources are read-restricted and you want to expose only search-result excerpts rather than complete pages.
+</ParamField>
+
+<ParamField body="tools.get_page.maxContentLength" type="number" default="50000">
+  The maximum number of characters returned for a single page. Pages exceeding this limit are truncated at a clean paragraph boundary. Increase this value for documentation with very long reference pages; reduce it to keep AI context windows from filling up on a single page.
+</ParamField>
+
+### Example
+
+```json
+{
+  "tools": {
+    "get_page": {
+      "enabled": true,
+      "maxContentLength": 100000
+    }
+  }
+}
+```
+
+## Disabling tools
+
+There are several scenarios where you may want to turn off a specific tool rather than use the default-on configuration:
+
+- **Disable `list_pages`** when your documentation site has hundreds or thousands of pages. A full enumeration can overwhelm the AI client's context window and slow down responses. Rely on `search` instead for discovery.
+- **Disable `get_page`** when your documentation sources are gated behind licenses or paywalls and you only want AI clients to see search-result summaries, not the full content of each page.
+- **Disable `search`** only if you are building a narrowly scoped integration where the AI client already knows exactly which pages it needs and will call `get_page` directly.
+
+<Warning>
+  Disabling `search` means AI clients have no way to discover relevant pages by keyword. Unless you have a specific reason to turn it off — and your client is already using `list_pages` plus `get_page` for navigation — leave `search` enabled. Without it, the AI assistant cannot find anything in your documentation.
+</Warning>
