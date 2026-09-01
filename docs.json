@@ -15,36 +15,19 @@
         "groups": [
           {
             "group": "Get Started",
-            "pages": [
-              "introduction",
-              "quickstart",
-              "how-it-works"
-            ]
+            "pages": []
           },
           {
             "group": "Configuration",
-            "pages": [
-              "configuration/overview",
-              "configuration/tools",
-              "configuration/authentication"
-            ]
+            "pages": []
           },
           {
             "group": "Integrations",
-            "pages": [
-              "integrations/claude-desktop",
-              "integrations/cursor",
-              "integrations/vscode",
-              "integrations/other-clients"
-            ]
+            "pages": []
           },
           {
             "group": "Guides",
-            "pages": [
-              "guides/adding-docs-sources",
-              "guides/customizing-tools",
-              "guides/llms-txt"
-            ]
+            "pages": []
           }
         ]
       },
@@ -57,19 +40,11 @@
           },
           {
             "group": "MCP Tools",
-            "pages": [
-              "api/overview",
-              "api/list-pages",
-              "api/search",
-              "api/get-page"
-            ]
+            "pages": []
           },
           {
             "group": "Transport",
-            "pages": [
-              "api/stdio",
-              "api/http"
-            ]
+            "pages": []
           }
         ]
       }
