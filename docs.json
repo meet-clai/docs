@@ -55,5 +55,9 @@
       "type": "github",
       "href": "https://github.com/mintlify-community/docs-clai-270af231"
     }
+  },
+  "logo": {
+    "light": "/logo/clai.png",
+    "dark": "/logo/clai.png"
   }
 }
